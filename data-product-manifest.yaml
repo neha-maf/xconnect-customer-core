@@ -1,20 +1,27 @@
-version: 0.0.1
+version: 0.1.0
+alias: MAF_Customer_Core
 discoveryPort:
-  name: MAF XConnect Customer Core latest
-  description: Maf XConnect Customer Core
-  category: audience
-  image: http://google.com
-  autofillUserinfo: true
-  tags: []
-  extra: {}
+  name: MAF Customer Core Attributes
+  shortDescription: This is Maf XConnect Customer core manifest
+  longDescription: This is Maf XConnect Customer core manifest
+  tags:
+    - MAF Data
+    - Schedule Run
+    - Xconnect
+    - Customer
+  domain: ['Consumer']
+  function: ['Forecast']
+  regulatoryFields:
+    dataPrivacy: public
+    customerInfo: nonPII
+    dataOrigin: machineGenerated
+    monetaryInfo: nonFinancialData
 inputPorts:
   - alias: 'dp_maf_xconnect_customer_central'
     description: 'XConnect Customer Central'
-    tags: []
-    extra: {}
     syncType: 'pull'
     type: 'dataproduct'
-    dataProductUrn: urn:dv:dataproduct:eb1498e1-c2fe-4b2e-942a-ed4682e3227c
+    dataProductUrn: urn:dv:dataproduct:3a59a559-c810-4d58-b092-141a1d33b884
     projection:
       - id
       - gcr_id
@@ -25,29 +32,43 @@ inputPorts:
       - email
       - phone
       - nationality
-stateManagement:
-  alias: 'maf_xconnect_customer_core'
-  refreshInterval: 30 10 * * *
+productState:
+  updateType: 'scheduled'
+  updateSchedule: "30 7 * * *"
   updateStrategy: overwrite
-  productStoreState:
-    logicalSchemaUrn: urn:dv:schema:4b44a747-f0a2-4446-b2aa-dedfc33690be
-  retentionVersions: "10"
+  logicalSchemaUrn: urn:dv:schema:4b44a747-f0a2-4446-b2aa-dedfc33690be
   updateStrategyOptions:
-      uniqueKeyColumns:
+    uniqueKeyColumns:
         - nothing
-      changeTrackColumns:
+    changeTrackColumns:
         - nothing
 transformation:
     - alias: "s3_maf_xconnect_customer_core_transform"
       description: "step_1"
-      type: "SQL"
+      type: sql
+      sequenceNo: 1
+      stepName: one
       query: "SELECT * FROM customer_central"
+      inputDataFrameList:
+        - inputDataFrame: test
+          tempViewName: test
       references:
         - alias: 'dp_maf_xconnect_customer_central'
           sqlReference: 'customer_central'
 outputPort:
-  channels:
-    - channelType: REST-API
-      queryType: SQL
-    - channelType: JDBC
-      queryType: SQL
+  subscriptionChannels:
+    - channelType: jdbc
+      queryType: sql
+    - channelType: rest-api
+      queryType: sql
+controlPort:
+  dataQualityRules:
+    RecordCountCheck:
+      inputPort:
+        - referenceAlias: dp_maf_xconnect_customer_central
+          expression: ">="
+          number: 100
+      productState:
+        referenceAlias: dp_maf_xconnect_customer_central
+        expression: ==
+        number: 100
